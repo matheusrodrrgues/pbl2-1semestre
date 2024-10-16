@@ -1,111 +1,122 @@
-import random, os, time
+import curses
+import random
+import time
 
-tabtetris = []
-for i in range(20):
-    linha = []
-    for c in range(10):
-        linha.append("⬜")
-    tabtetris.append(linha)
+# Tabuleiro Tetris
+tabtetris = [['⬜' for _ in range(10)] for _ in range(20)]
 
-#  peças
-I = ["🟥", "🟥", "🟥", "🟥"]
+# Definição das peças
+I = [["🟥", "🟥", "🟥", "🟥"]]
 T = [["🟥", "🟥", "🟥"],
-    [" ", "🟥", " "]]
+     [" ", "🟥", " "]]
 O = [["🟥", "🟥"],
-    ["🟥", "🟥"]]
+     ["🟥", "🟥"]]
 S = [[" ", "🟥", "🟥"],
-    ["🟥", "🟥", " "]]
+     ["🟥", "🟥", " "]]
 Z = [["🟥", "🟥", " "],
-    [" ", "🟥", "🟥"]]
+     [" ", "🟥", "🟥"]]
 J = [["🟥", " ", " "],
-    ["🟥", "🟥", "🟥"]]
+     ["🟥", "🟥", "🟥"]]
 L = [[" ", " ", "🟥"],
-    ["🟥", "🟥", "🟥"]]
+     ["🟥", "🟥", "🟥"]]
+BMB = [["💣"]]
+letras = [I, T, O, S, Z, J, L, BMB]
 
-letras = [I, T, O, S, Z, J, L]
-
-def print_tabtetris():
-    os.system('clear' if os.name == 'posix' else 'cls')
+def print_tabtetris(stdscr, pontos):
+    stdscr.clear()
+    stdscr.addstr("Pontuação: {}\n".format(pontos))
     for linha in tabtetris:
-        print("".join(linha))
-    print("\n")
+        stdscr.addstr("".join(linha) + "\n")
+    stdscr.refresh()
 
 def colocar_letra(letra, linha, coluna):
-    if len(letra) > 0 and type(letra[0]) == list:
-        for i in range(len(letra)):
-            for j in range(len(letra[0])):
-                if letra[i][j] == "🟥":
-                    if linha + i < 20 and coluna + j < 10:
-                        tabtetris[linha + i][coluna + j] = "🟥"
-    else:
-        for j in range(len(letra)):
-            if coluna + j < 10:
-                tabtetris[linha][coluna + j] = letra[j]
+    for i in range(len(letra)):
+        for j in range(len(letra[i])):
+            if letra[i][j] == "🟥" and 0 <= linha + i < 20 and 0 <= coluna + j < 10:
+                tabtetris[linha + i][coluna + j] = "🟥"
 
+def limpar_letra(letra, linha, coluna):
+    for i in range(len(letra)):
+        for j in range(len(letra[i])):
+            if letra[i][j] == "🟥" and 0 <= linha + i < 20 and 0 <= coluna + j < 10:
+                tabtetris[linha + i][coluna + j] = "⬜"
 
-# Escolher uma peça aleatória
-letra_atual = random.choice(letras)
+def verificar_colisao(letra, linha, coluna):
+    for i in range(len(letra)):
+        for j in range(len(letra[i])):
+            if letra[i][j] == "🟥":
+                if linha + i >= 20 or coluna + j < 0 or coluna + j >= 10 or tabtetris[linha + i][coluna + j] == "🟥":
+                    return True
+    return False
 
-# Inicializar a peça na primeira linha
-linha_atual = 0
-coluna_atual = 0
+def rotacionar_letra(letra):
+    return [list(reversed(col)) for col in zip(*letra)]
 
-if type(letra_atual[0]) == list:  # Peças com várias linhas
-    for i in range(len(letra_atual)):
-        for j in range(len(letra_atual[0])):
-            if letra_atual[i][j] == "🟥":
-                if coluna_atual + j < 10 and linha_atual + i < 20:
-                    tabtetris[linha_atual + i][coluna_atual + j] = "🟥"
-else:
-    for j in range(len(letra_atual)):
-        if coluna_atual + j < 10:
-            tabtetris[linha_atual][coluna_atual + j] = letra_atual[j]
+def remover_linhas_completas():
+    linhas_removidas = 0
+    nova_tabtetris = [linha for linha in tabtetris if not all(celula == "🟥" for celula in linha)]
+    linhas_removidas = 20 - len(nova_tabtetris)
 
-for i in range(20):
-    print_tabtetris()
-    time.sleep(0.3)
+    while len(nova_tabtetris) < 20:
+        nova_tabtetris.insert(0, ['⬜' for _ in range(10)])
 
-    # apagar posicao anterior
-    if type(letra_atual[0]) == list:
-        for k in range(len(letra_atual)):
-            for l in range(len(letra_atual[0])):
-                if letra_atual[k][l] == "🟥":
-                    if linha_atual + k < 20 and coluna_atual + l < 10:
-                        tabtetris[linha_atual + k][coluna_atual + l] = "⬜"
-    else:
-        for j in range(len(letra_atual)):
-            if linha_atual < 20 and coluna_atual + j < 10:
-                tabtetris[linha_atual][coluna_atual + j] = "⬜"
+    for i in range(20):
+        tabtetris[i] = nova_tabtetris[i]
 
-    # bloco pra proxima linha
-    linha_atual += 1
-    if linha_atual + (len(letra_atual) if type(letra_atual[0]) == list else 0) < 20:
-        if type(letra_atual[0]) == list:
-            for k in range(len(letra_atual)):
-                for l in range(len(letra_atual[0])):
-                    if letra_atual[k][l] == "🟥":
-                        if linha_atual + k < 20 and coluna_atual + l < 10:
-                            tabtetris[linha_atual + k][coluna_atual + l] = "🟥"
-        else:
-            for j in range(len(letra_atual)):
-                if linha_atual < 20 and coluna_atual + j < 10:
-                    tabtetris[linha_atual][coluna_atual + j] = letra_atual[j]
-    else:
-        # Criar uma nova peça caso a atual tenha atingido o fundo
-        letra_atual = random.choice(letras)
-        linha_atual = 0
-        coluna_atual = 0
+    return linhas_removidas
 
-        if type(letra_atual[0]) == list:  # Peças com várias linhas
-            for i in range(len(letra_atual)):
-                for j in range(len(letra_atual[0])):
-                    if letra_atual[i][j] == "🟥":
-                        if coluna_atual + j < 10 and linha_atual + i < 20:
-                            tabtetris[linha_atual + i][coluna_atual + j] = "🟥"
-        else:
-            for j in range(len(letra_atual)):
-                if coluna_atual + j < 10:
-                    tabtetris[linha_atual][coluna_atual + j] = letra_atual[j]
+def atualizar_pontuacao(linhas_removidas):
+    return linhas_removidas * 100
 
-# Exibir o tabtetris final
-print_tabtetris()
+def game_over(letra, linha, coluna):
+    return verificar_colisao(letra, linha, coluna)
+
+def jogartetris(stdscr):
+    pontos = 0
+    letra_atual = random.choice(letras)
+    linha_atual = 0
+    coluna_atual = 3
+    curses.curs_set(0)
+    stdscr.nodelay(1)
+
+    while True:
+        print_tabtetris(stdscr, pontos)
+        time.sleep(0.3)
+
+        # Limpar a posição anterior
+        limpar_letra(letra_atual, linha_atual, coluna_atual)
+
+        # Movimento para baixo
+        linha_atual += 1
+        if verificar_colisao(letra_atual, linha_atual, coluna_atual):
+            linha_atual -= 1
+            colocar_letra(letra_atual, linha_atual, coluna_atual)
+            linhas_removidas = remover_linhas_completas()
+            pontos += atualizar_pontuacao(linhas_removidas)
+            
+            # Checar se é Game Over
+            letra_atual = random.choice(letras)
+            linha_atual = 0
+            coluna_atual = 3
+            
+            if game_over(letra_atual, linha_atual, coluna_atual):
+                stdscr.addstr(22, 0, "GAME OVER")
+                stdscr.refresh()
+                time.sleep(2)
+                break
+
+        # Controle do jogador
+        key = stdscr.getch()
+        if key == ord('d') and not verificar_colisao(letra_atual, linha_atual, coluna_atual + 1):
+            coluna_atual += 1
+        elif key == ord('a') and not verificar_colisao(letra_atual, linha_atual, coluna_atual - 1):
+            coluna_atual -= 1
+        elif key == ord('w'):
+            nova_letra = rotacionar_letra(letra_atual)
+            if not verificar_colisao(nova_letra, linha_atual, coluna_atual):
+                letra_atual = nova_letra
+
+        colocar_letra(letra_atual, linha_atual, coluna_atual)
+
+if __name__ == "__main__":
+    curses.wrapper(jogartetris)
