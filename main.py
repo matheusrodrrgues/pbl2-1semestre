@@ -1,3 +1,17 @@
+# /*******************************************************************************
+# Autor: Matheus Silva Rodrigues
+# Componente Curricular: MI Algoritmos
+# Concluido em: 29/10/2024
+# Declaro que este código foi elaborado por mim de forma individual e não contém nenhum
+# trecho de código de outro colega ou de outro autor, tais como provindos de livros e
+# apostilas, e páginas ou documentos eletrônicos da Internet. Qualquer trecho de código
+# de outra autoria que não a minha está destacado com uma citação para o autor e a fonte
+# do código, e estou ciente que estes trechos não serão considerados para fins de avaliação.
+# SO utilizado: Windows 10
+# Bibliotecas utilizadas: CURSES, RANDOM e TIME
+# NÃO FUNCIONA EM CAPSLOOK
+# ******************************************************************************************/
+
 import curses
 import random
 import time
@@ -19,32 +33,32 @@ J = [["🟥", " ", " "],
      ["🟥", "🟥", "🟥"]]
 L = [[" ", " ", "🟥"],
      ["🟥", "🟥", "🟥"]]
-BMB = ["💣"]
+BMB = [["💣"]]
 letras = [I, T, O, S, Z, J, L, BMB]
 
 def print_tabtetris(stdscr, pontos):
     stdscr.clear()
-    stdscr.addstr("Pontuação: {}\n".format(pontos))
     for linha in tabtetris:
-        stdscr.addstr("".join(linha) + "\n")
+        stdscr.addstr(''.join(linha) + '\n')
+    stdscr.addstr("Pontuação: {}\n".format(pontos))
     stdscr.refresh()
 
 def colocar_letra(letra, linha, coluna):
     for i in range(len(letra)):
-        for j in range(len(letra[0])):
-            if letra[i][j] == "🟥" and 0 <= linha + i < 20 and 0 <= coluna + j < 10:
-                tabtetris[linha + i][coluna + j] = "🟥"
+        for j in range(len(letra[i])):
+            if letra[i][j] in "🟥💣" and 0 <= linha + i < 20 and 0 <= coluna + j < 10:
+                tabtetris[linha + i][coluna + j] = letra[i][j]
 
 def limpar_letra(letra, linha, coluna):
     for i in range(len(letra)):
-        for j in range(len(letra[0])):
-            if letra[i][j] == "🟥" and 0 <= linha + i < 20 and 0 <= coluna + j < 10:
+        for j in range(len(letra[i])):
+            if letra[i][j] in "🟥💣" and 0 <= linha + i < 20 and 0 <= coluna + j < 10:
                 tabtetris[linha + i][coluna + j] = "⬜"
 
 def verificar_colisao(letra, linha, coluna):
     for i in range(len(letra)):
-        for j in range(len(letra[0])):
-            if letra[i][j] == "🟥":
+        for j in range(len(letra[i])):
+            if letra[i][j] in "🟥💣":
                 if linha + i >= 20 or coluna + j < 0 or coluna + j >= 10 or tabtetris[linha + i][coluna + j] == "🟥":
                     return True
     return False
@@ -71,41 +85,57 @@ def atualizar_pontuacao(linhas_removidas):
 def game_over(letra, linha, coluna):
     return verificar_colisao(letra, linha, coluna)
 
+# Função para limpar a área ao redor da bomba
+def explodir_bomba(linha, coluna):
+    for i in range(-1, 2):  # De -1 a 1
+        for j in range(-1, 2):  # De -1 a 1
+            if 0 <= linha + i < 20 and 0 <= coluna + j < 10:
+                tabtetris[linha + i][coluna + j] = "⬜"  # Limpa a célula
+
 def jogartetris(stdscr):
     pontos = 0
     letra_atual = random.choice(letras)
     linha_atual = 0
     coluna_atual = 3
+    tempo_descida = time.time()  # Controle de tempo para descida automática
     curses.curs_set(0)
-    stdscr.nodelay(1)
-
-    # Mostrar o tabuleiro pela primeira vez
-    print_tabtetris(stdscr, pontos)
+    stdscr.nodelay(True)
 
     while True:
-        time.sleep(0.3)
+        print_tabtetris(stdscr, pontos)
 
         # Limpar a posição anterior
         limpar_letra(letra_atual, linha_atual, coluna_atual)
 
-        # Movimento para baixo
-        linha_atual += 1
+        # Verificar o tempo para descer automaticamente a peça
+        if time.time() - tempo_descida > 0.1:
+            linha_atual += 1
+            tempo_descida = time.time()  # Resetar o temporizador de descida
+
+        # Checar colisão após descer
         if verificar_colisao(letra_atual, linha_atual, coluna_atual):
-            linha_atual -= 1
-            colocar_letra(letra_atual, linha_atual, coluna_atual)
+            linha_atual -= 1  # Corrigir posição
+
+            # Se a letra atual for a bomba
+            if letra_atual == BMB:
+                explodir_bomba(linha_atual, coluna_atual)  # Explode a bomba
+            else:
+                colocar_letra(letra_atual, linha_atual, coluna_atual)
+
             linhas_removidas = remover_linhas_completas()
             pontos += atualizar_pontuacao(linhas_removidas)
 
-            # Checar se é Game Over
+            # Checar se é Game Over após colocar a letra
             letra_atual = random.choice(letras)
             linha_atual = 0
             coluna_atual = 3
-            
-            # Checar se a nova letra pode ser colocada
-            if game_over(letra_atual, linha_atual, coluna_atual):
+
+            # Verifica colisão com a nova letra
+            if verificar_colisao(letra_atual, linha_atual, coluna_atual):
                 stdscr.addstr(22, 0, "GAME OVER")
                 stdscr.refresh()
-                time.sleep(2)
+                stdscr.nodelay(False)
+                stdscr.getch()
                 break
 
         # Controle do jogador
@@ -119,8 +149,30 @@ def jogartetris(stdscr):
             if not verificar_colisao(nova_letra, linha_atual, coluna_atual):
                 letra_atual = nova_letra
 
+        # Colocar a peça no tabuleiro
         colocar_letra(letra_atual, linha_atual, coluna_atual)
-        print_tabtetris(stdscr, pontos)  # Atualizar o tabuleiro após cada movimento
+
+        # Pequeno delay para o loop, para garantir que o programa não consuma CPU excessivamente
+        curses.napms(150)
+
+def menu(stdscr):
+    while True:
+        stdscr.clear()
+        stdscr.addstr("Bem-vindo ao Tetris\n")
+        stdscr.addstr("Pressione 1 para iniciar o jogo\n")
+        stdscr.addstr("Pressione 0 para sair\n")
+        stdscr.addstr("Caso deseje encerrar o jogo no momento, aperte ESC.\n")
+
+        stdscr.refresh()
+        key = stdscr.getch()
+        if key == ord('1'):
+            jogartetris(stdscr)
+        elif key == ord('0'):
+            print("Programa encerrado. Até logo!")
+            break
+        elif key == ord('ESC'):
+            break
+            
 
 if __name__ == "__main__":
-    curses.wrapper(jogartetris)
+    curses.wrapper(menu)
