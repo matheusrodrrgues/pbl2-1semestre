@@ -12,49 +12,62 @@
 # NÃO FUNCIONA EM CAPSLOOK
 # ******************************************************************************************/
 
-import curses
-import random
-import time
+import curses  # biblioteca utilizada para mover e rotacionar as peças
+import random  # biblioteca utilizada para sortear as peças ao descer
+import time    # biblioteca utilizada para otimizar o tempo
 
 # Tabuleiro Tetris
 tabtetris = [['⬜' for _ in range(10)] for _ in range(20)]
 
-# Definição das peças
+# Definição das peças, onde cada peça tem uma formação padrão
 I = [["🟥", "🟥", "🟥", "🟥"]]
-T = [["🟥", "🟥", "🟥"],
-     [" ", "🟥", " "]]
-O = [["🟥", "🟥"],
-     ["🟥", "🟥"]]
-S = [[" ", "🟥", "🟥"],
-     ["🟥", "🟥", " "]]
-Z = [["🟥", "🟥", " "],
-     [" ", "🟥", "🟥"]]
-J = [["🟥", " ", " "],
-     ["🟥", "🟥", "🟥"]]
-L = [[" ", " ", "🟥"],
-     ["🟥", "🟥", "🟥"]]
+T = [["🟥", "🟥", "🟥"], [" ", "🟥", " "]]
+O = [["🟥", "🟥"], ["🟥", "🟥"]]
+S = [[" ", "🟥", "🟥"], ["🟥", "🟥", " "]]
+Z = [["🟥", "🟥", " "], [" ", "🟥", "🟥"]]
+J = [["🟥", " ", " "], ["🟥", "🟥", "🟥"]]
+L = [[" ", " ", "🟥"], ["🟥", "🟥", "🟥"]]
 BMB = [["💣"]]
+
+# Variável que armazena as as peças em formato de letra, para randomiza-las depois
 letras = [I, T, O, S, Z, J, L, BMB]
 
+# Essa função inicializa o tabuleiro e apresenta a pontuação
+# A cada peça que caí, o tabuleiro reinicia em loop automático
 def print_tabtetris(stdscr, pontos):
     stdscr.clear()
+    # Imprime o tabuleiro do Tetris
     for linha in tabtetris:
         stdscr.addstr(''.join(linha) + '\n')
-    stdscr.addstr("Pontuação: {}\n".format(pontos))
+    
+    stdscr.addstr("SCORE: {}\n".format(pontos))
+    stdscr.addstr("\n")
+    #Menu com os controles do jogo
+    stdscr.addstr("\n")
+    stdscr.addstr("Manual:\n")
+    stdscr.addstr("CLIQUE [A] PARA MOVER PARA A ESQUERDA\n")
+    stdscr.addstr("CLIQUE [D] PARA MOVER PARA A DIREITA\n")
+    stdscr.addstr("CLIQUE [W] PARA GIRAR A PEÇA\n")
+    stdscr.addstr("CLIQUE [S] PARA DESCER MAIS RÁPIDO\n")
+
     stdscr.refresh()
 
+# Essa função inicializa a letra, sempre em loop, descendo uma linha e uma coluna1111
 def colocar_letra(letra, linha, coluna):
     for i in range(len(letra)):
         for j in range(len(letra[i])):
             if letra[i][j] in "🟥💣" and 0 <= linha + i < 20 and 0 <= coluna + j < 10:
                 tabtetris[linha + i][coluna + j] = letra[i][j]
 
+# Remove a peça da posição, substituindo seus blocos por ⬜
 def limpar_letra(letra, linha, coluna):
     for i in range(len(letra)):
         for j in range(len(letra[i])):
             if letra[i][j] in "🟥💣" and 0 <= linha + i < 20 and 0 <= coluna + j < 10:
                 tabtetris[linha + i][coluna + j] = "⬜"
 
+# Verifica se a peça irá bater com outra peça ou com o limite do tabuleiro ao se mover para uma posição específica. 
+# Retorna True em caso de colisão.
 def verificar_colisao(letra, linha, coluna):
     for i in range(len(letra)):
         for j in range(len(letra[i])):
@@ -63,9 +76,12 @@ def verificar_colisao(letra, linha, coluna):
                     return True
     return False
 
+# Gira as peças utilizando o zip do curses
 def rotacionar_letra(letra):
     return [list(reversed(col)) for col in zip(*letra)]
 
+# Remove as linhas completamente preenchidas com blocos 🟥 e insere novas linhas vazias no topo.
+# Calcula e retorna o número de linhas removidas.
 def remover_linhas_completas():
     linhas_removidas = 0
     nova_tabtetris = [linha for linha in tabtetris if not all(celula == "🟥" for celula in linha)]
@@ -79,58 +95,67 @@ def remover_linhas_completas():
 
     return linhas_removidas
 
+# Essa função gera a pontuação com base no número de linhas removidas. 
+# Uma linha removida vale 100, duas linhas removidas vale o 4x mais.
 def atualizar_pontuacao(linhas_removidas):
-    return linhas_removidas * 100
+    if linhas_removidas == 1:
+        return 100
+    elif linhas_removidas == 2:
+        return 400
+    elif linhas_removidas == 3:
+        return 600
+    elif linhas_removidas == 4:
+        return 800
+    else:
+        return 0
 
+# Verifica se o jogo acabou, chamando 'verificar_colisao' para checar se a nova peça bate de início.
 def game_over(letra, linha, coluna):
     return verificar_colisao(letra, linha, coluna)
 
-# Função para limpar a área ao redor da bomba
+# Caso a peça BMB caia, ela elimina as peças ao seu redor (3x3) e se elimina logo após
+# Se a peça cair e não tiver nada ao redor, ela se auto-elimina.
+# Caso a bomba elimine outras peças, após verificar que não tem mais nenhuma, ela se elimina.
 def explodir_bomba(linha, coluna):
-    for i in range(-1, 2):  # De -1 a 1
-        for j in range(-1, 2):  # De -1 a 1
+    for i in range(-1, 2):
+        for j in range(-1, 2):
             if 0 <= linha + i < 20 and 0 <= coluna + j < 10:
-                tabtetris[linha + i][coluna + j] = "⬜"  # Limpa a célula
+                tabtetris[linha + i][coluna + j] = "⬜"
 
+# Função principal do programa, onde ele gera as peças, gera a pontuação, gera os comandos
+# Essa função desenvolve todo o game e entra no loop infinito até o game chamar a função game over.
 def jogartetris(stdscr):
     pontos = 0
     letra_atual = random.choice(letras)
     linha_atual = 0
     coluna_atual = 3
-    tempo_descida = time.time()  # Controle de tempo para descida automática
+    tempo_descida = time.time()
     curses.curs_set(0)
     stdscr.nodelay(True)
 
     while True:
         print_tabtetris(stdscr, pontos)
-
-        # Limpar a posição anterior
         limpar_letra(letra_atual, linha_atual, coluna_atual)
 
-        # Verificar o tempo para descer automaticamente a peça
         if time.time() - tempo_descida > 0.1:
             linha_atual += 1
-            tempo_descida = time.time()  # Resetar o temporizador de descida
+            tempo_descida = time.time()
 
-        # Checar colisão após descer
         if verificar_colisao(letra_atual, linha_atual, coluna_atual):
-            linha_atual -= 1  # Corrigir posição
+            linha_atual -= 1
 
-            # Se a letra atual for a bomba
             if letra_atual == BMB:
-                explodir_bomba(linha_atual, coluna_atual)  # Explode a bomba
+                explodir_bomba(linha_atual, coluna_atual)
             else:
                 colocar_letra(letra_atual, linha_atual, coluna_atual)
 
             linhas_removidas = remover_linhas_completas()
             pontos += atualizar_pontuacao(linhas_removidas)
 
-            # Checar se é Game Over após colocar a letra
             letra_atual = random.choice(letras)
             linha_atual = 0
             coluna_atual = 3
 
-            # Verifica colisão com a nova letra
             if verificar_colisao(letra_atual, linha_atual, coluna_atual):
                 stdscr.addstr(22, 0, "GAME OVER")
                 stdscr.refresh()
@@ -138,7 +163,6 @@ def jogartetris(stdscr):
                 stdscr.getch()
                 break
 
-        # Controle do jogador
         key = stdscr.getch()
         if key == ord('d') and not verificar_colisao(letra_atual, linha_atual, coluna_atual + 1):
             coluna_atual += 1
@@ -148,13 +172,14 @@ def jogartetris(stdscr):
             nova_letra = rotacionar_letra(letra_atual)
             if not verificar_colisao(nova_letra, linha_atual, coluna_atual):
                 letra_atual = nova_letra
+        elif key == ord('s'):
+            while not verificar_colisao(letra_atual, linha_atual + 1, coluna_atual):
+                linha_atual += 1
 
-        # Colocar a peça no tabuleiro
         colocar_letra(letra_atual, linha_atual, coluna_atual)
-
-        # Pequeno delay para o loop, para garantir que o programa não consuma CPU excessivamente
         curses.napms(150)
 
+# Menu iniciaizador do jogo
 def menu(stdscr):
     while True:
         stdscr.clear()
@@ -170,9 +195,6 @@ def menu(stdscr):
         elif key == ord('0'):
             print("Programa encerrado. Até logo!")
             break
-        elif key == ord('ESC'):
-            break
-            
 
 if __name__ == "__main__":
     curses.wrapper(menu)
