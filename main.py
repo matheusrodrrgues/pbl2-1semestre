@@ -43,7 +43,6 @@ def print_tabtetris(stdscr, pontos):
     stdscr.addstr("SCORE: {}\n".format(pontos))
     stdscr.addstr("\n")
     #Menu com os controles do jogo
-    stdscr.addstr("\n")
     stdscr.addstr("Manual:\n")
     stdscr.addstr("CLIQUE [A] PARA MOVER PARA A ESQUERDA\n")
     stdscr.addstr("CLIQUE [D] PARA MOVER PARA A DIREITA\n")
@@ -177,7 +176,7 @@ def jogartetris(stdscr):
                 linha_atual += 1
 
         colocar_letra(letra_atual, linha_atual, coluna_atual)
-        curses.napms(150)
+        curses.napms(160)
 
 # Menu iniciaizador do jogo
 def menu(stdscr):
