@@ -1,4 +1,4 @@
-# /*******************************************************************************
+# /*****************************************************************************************/
 # Autor: Matheus Silva Rodrigues
 # Componente Curricular: MI Algoritmos
 # Concluido em: 29/10/2024
@@ -7,9 +7,11 @@
 # apostilas, e páginas ou documentos eletrônicos da Internet. Qualquer trecho de código
 # de outra autoria que não a minha está destacado com uma citação para o autor e a fonte
 # do código, e estou ciente que estes trechos não serão considerados para fins de avaliação.
+# ******************************************************************************************/
 # SO utilizado: Windows 10
 # Bibliotecas utilizadas: CURSES, RANDOM e TIME
 # NÃO FUNCIONA EM CAPSLOOK
+# Versão do Python: 3.12.7 em 64-bit
 # ******************************************************************************************/
 
 import curses  # biblioteca utilizada para mover e rotacionar as peças
@@ -48,6 +50,7 @@ def print_tabtetris(stdscr, pontos):
     stdscr.addstr("CLIQUE [D] PARA MOVER PARA A DIREITA\n")
     stdscr.addstr("CLIQUE [W] PARA GIRAR A PEÇA\n")
     stdscr.addstr("CLIQUE [S] PARA DESCER MAIS RÁPIDO\n")
+    stdscr.addstr("AVISO: NÃO PRESSIONE AS TECLAS FIXAMENTE.\n")
 
     stdscr.refresh()
 
@@ -185,8 +188,6 @@ def menu(stdscr):
         stdscr.addstr("Bem-vindo ao Tetris\n")
         stdscr.addstr("Pressione 1 para iniciar o jogo\n")
         stdscr.addstr("Pressione 0 para sair\n")
-        stdscr.addstr("Caso deseje encerrar o jogo no momento, aperte ESC.\n")
-
         stdscr.refresh()
         key = stdscr.getch()
         if key == ord('1'):
