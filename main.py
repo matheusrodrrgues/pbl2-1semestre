@@ -40,7 +40,7 @@ def print_tabtetris(stdscr, pontos):
     stdscr.clear()
     # Imprime o tabuleiro do Tetris
     for linha in tabtetris:
-        stdscr.addstr(''.join(linha) + '\n')
+        stdscr.addstr(''.join(linha) + '\n') #Deixa os blocos organizados e bonitos
     
     stdscr.addstr("SCORE: {}\n".format(pontos))
     stdscr.addstr("\n")
@@ -52,7 +52,7 @@ def print_tabtetris(stdscr, pontos):
     stdscr.addstr("CLIQUE [S] PARA DESCER MAIS RÁPIDO\n")
     stdscr.addstr("AVISO: NÃO PRESSIONE AS TECLAS FIXAMENTE.\n")
 
-    stdscr.refresh()
+    stdscr.refresh() #Atualiza a tela
 
 # Essa função inicializa a letra, sempre em loop, descendo uma linha e uma coluna1111
 def colocar_letra(letra, linha, coluna):
@@ -163,7 +163,7 @@ def jogartetris(stdscr):
                 stdscr.refresh()
                 stdscr.nodelay(False)
                 stdscr.getch()
-                break
+                return
 
         key = stdscr.getch()
         if key == ord('d') and not verificar_colisao(letra_atual, linha_atual, coluna_atual + 1):
@@ -179,7 +179,7 @@ def jogartetris(stdscr):
                 linha_atual += 1
 
         colocar_letra(letra_atual, linha_atual, coluna_atual)
-        curses.napms(200)
+        curses.napms(220)
 
 # Menu iniciaizador do jogo
 def menu(stdscr):
@@ -193,8 +193,11 @@ def menu(stdscr):
         if key == ord('1'):
             jogartetris(stdscr)
         elif key == ord('0'):
-            print("Programa encerrado. Até logo!")
-            break
+            stdscr.clear()
+            stdscr.addstr("Programa encerrado. Até logo!\n")
+            stdscr.refresh()
+            stdscr.getch() 
+            return  
 
 if __name__ == "__main__":
     curses.wrapper(menu)
