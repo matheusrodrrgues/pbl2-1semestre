@@ -179,7 +179,7 @@ def jogartetris(stdscr):
                 linha_atual += 1
 
         colocar_letra(letra_atual, linha_atual, coluna_atual)
-        curses.napms(160)
+        curses.napms(200)
 
 # Menu iniciaizador do jogo
 def menu(stdscr):
